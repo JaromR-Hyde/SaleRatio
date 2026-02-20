@@ -12,6 +12,10 @@ echo === RUNNING PYTHON SCRIPT ===
 python sqlTojson.py
 
 echo.
+echo === RUNNING PYTHON SCRIPT ===
+python regionSqlToTxt.py
+
+echo.
 echo === DEACTIVATING VENV ===
 call deactivate
 

@@ -1,5 +1,5 @@
 // ===============================================================
-// REGION / SUBTYPE / LAND DISTRICT LOADER + FILTER LOGGER + CSV FILTER ENGINE
+// REGION / SUBTYPE / LAND DISTRICT LOADER + FILTER LOGGER + JSON FILTER ENGINE
 // ===============================================================
 
 let regionData = [];
@@ -9,17 +9,22 @@ let filterLog = [];   // <-- LOG FILE (in-memory array)
 
 
 // ===============================================================
-// STEP 1: LOAD REGIONS.JSON + TXT + CSV
+// STEP 1: LOAD REGIONS.JSON + TXT + SALES.JSON
 // ===============================================================
 Promise.all([
   fetch('regions.json').then(r => r.json()),
   fetch('region_landDistrict.txt').then(r => r.text()),
-  fetch('../Data/sale.csv').then(r => r.text())
+  fetch('../output.json').then(r => r.json())
 ])
-.then(([jsonData, txtText, csvText]) => {
+.then(([jsonData, txtText, jsonSales]) => {
   regionData = jsonData.regions;
   txtChildren = parseChildren(txtText);
-  salesData = parseCSV(csvText);
+
+  // Convert RATIO to number
+  salesData = jsonSales.map(r => ({
+    ...r,
+    RATIO: Number(r.RATIO)
+  }));
 
   mergeChildren();
   populateMainDropdown();
@@ -44,52 +49,7 @@ function parseChildren(text) {
 
 
 // ===============================================================
-// STEP 3: PARSE CSV INTO OBJECTS
-// ===============================================================
-function parseCSV(csv) {
-  const lines = csv.trim().split('\n');
-  const headers = lines[0].split(',');
-
-  return lines.slice(1).map(row => {
-    const cols = row.split(',');
-    const obj = {};
-
-    headers.forEach((h, i) => {
-      let val = cols[i]?.trim().replace(/\r/g, "");
-
-      // Normalize NULL or empty
-      if (val === "" || val === "NULL") {
-        obj[h] = null;
-        return;
-      }
-
-      // Explicitly convert RATIO to number
-      if (h === "RATIO") {
-        obj[h] = Number(val);
-        return;
-      }
-
-      // Normalize region fields as strings
-      if (h === "NBHD_REGION" || h === "NBHD_CODE" || h === "LAND_DISTRICT") {
-        obj[h] = val.toString();
-        return;
-      }
-
-      // Convert numeric fields
-      if (!isNaN(val)) {
-        obj[h] = Number(val);
-      } else {
-        obj[h] = val;
-      }
-    });
-
-    return obj;
-  });
-}
-
-
-// ===============================================================
-// STEP 4: BUILD SUBTYPES + CHILDREN DYNAMICALLY
+// STEP 3: MERGE TXT CHILDREN INTO REGION STRUCTURE
 // ===============================================================
 function mergeChildren() {
   regionData.forEach(region => {
@@ -113,7 +73,7 @@ function mergeChildren() {
 
 
 // ===============================================================
-// STEP 5: POPULATE MAIN REGION DROPDOWN
+// STEP 4: POPULATE MAIN REGION DROPDOWN
 // ===============================================================
 function populateMainDropdown() {
   const mainSelect = document.getElementById('mainRegion');
@@ -134,7 +94,7 @@ function populateMainDropdown() {
 
 
 // ===============================================================
-// STEP 6: POPULATE SUBTYPE DROPDOWN (OPTIONAL)
+// STEP 5: POPULATE SUBTYPE DROPDOWN
 // ===============================================================
 function updateSubDropdown() {
   const mainSelect = document.getElementById('mainRegion');
@@ -181,7 +141,7 @@ function updateSubDropdown() {
 
 
 // ===============================================================
-// STEP 7: POPULATE LAND DISTRICT DROPDOWN (OPTIONAL)
+// STEP 6: POPULATE LAND DISTRICT DROPDOWN
 // ===============================================================
 function updateChildDropdown() {
   const mainSelect = document.getElementById('mainRegion');
@@ -225,7 +185,7 @@ function updateChildDropdown() {
 
 
 // ===============================================================
-// STEP 8: APPLY FILTERS + LOG + COMPUTE SUMMARY
+// STEP 7: APPLY FILTERS + LOG + COMPUTE SUMMARY
 // ===============================================================
 function applyFilters() {
   const region = document.getElementById('mainRegion').value || null;
@@ -233,17 +193,15 @@ function applyFilters() {
   const district = document.getElementById('landDistrict').value || null;
 
   console.log("FILTERS APPLIED:", { region, subtype, district });
-  console.log("CSV LOADED:", salesData.length);
+  console.log("JSON LOADED:", salesData.length);
 
-  // MUST come before debug logs
   const filtered = salesData.filter(row => {
-      if (region && row.NBHD_REGION !== region) return false;
-      if (subtype && row.NBHD_CODE !== subtype) return false;
-      if (district && row.LAND_DISTRICT !== district) return false;
-      return true;
+    if (region && row.NBHD_REGION !== region) return false;
+    if (subtype && row.NBHD_CODE !== subtype) return false;
+    if (district && row.LAND_DISTRICT !== district) return false;
+    return true;
   });
 
-  // Debug logs AFTER filtered is created
   console.log("FILTERED ROW COUNT:", filtered.length);
   console.log("SUMMARY INPUT:", filtered);
 
@@ -253,21 +211,27 @@ function applyFilters() {
 
 
 // ===============================================================
-// STEP 9: COMPUTE SUMMARY METRICS (MATCHES YOUR SCREENSHOT)
+// STEP 8: COMPUTE SUMMARY METRICS
 // ===============================================================
 function computeSummary(rows) {
   if (rows.length === 0) return null;
 
-  const ratios = rows.map(r => r.RATIO).filter(x => !isNaN(x));
+  const ratios = rows
+    .map(r => r.RATIO)
+    .filter(x => typeof x === "number" && !isNaN(x));
+
+  if (ratios.length === 0) return null;
 
   const n = ratios.length;
-  const mean = ratios.reduce((a,b)=>a+b,0) / n;
-  const median = ratios.sort((a,b)=>a-b)[Math.floor(n/2)];
+  const mean = ratios.reduce((a, b) => a + b, 0) / n;
+
+  const sorted = [...ratios].sort((a, b) => a - b);
+  const median = sorted[Math.floor(n / 2)];
 
   const absDev = ratios.map(r => Math.abs(r - median));
-  const COD = (absDev.reduce((a,b)=>a+b,0) / n) / median * 100;
+  const COD = (absDev.reduce((a, b) => a + b, 0) / n) / median * 100;
 
-  const variance = ratios.reduce((a,b)=>a + Math.pow(b-mean,2),0) / n;
+  const variance = ratios.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / n;
   const COV = Math.sqrt(variance) / mean * 100;
 
   const PRD = mean / median;
@@ -298,7 +262,7 @@ function computeSummary(rows) {
 
 
 // ===============================================================
-// STEP 10: UPDATE SUMMARY BLOCK (YOU STYLE THIS IN HTML/CSS)
+// STEP 9: UPDATE SUMMARY BLOCK
 // ===============================================================
 function safe(value, digits = 4) {
   return (typeof value === "number" && !isNaN(value))

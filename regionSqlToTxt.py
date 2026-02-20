@@ -1,7 +1,13 @@
 import pyodbc
-import json
 from pathlib import Path
 import config
+
+
+# ------------------------------------------------------------
+# HARD-CODED PATHS
+# ------------------------------------------------------------
+SQL_FILE_PATH = "region.sql"                     # Your SQL file
+OUTPUT_FILE_PATH = "1_Regions/region_landDistrict.txt"   # Your output file
 
 
 # ------------------------------------------------------------
@@ -15,7 +21,7 @@ def load_sql_from_file(path: str) -> str:
 
 
 # ------------------------------------------------------------
-# FUNCTION: CONNECT TO SQL SERVER
+# FUNCTION: CONNECT TO SQL SERVER USING config.py
 # ------------------------------------------------------------
 def get_connection():
     try:
@@ -36,9 +42,9 @@ def get_connection():
 
 
 # ------------------------------------------------------------
-# FUNCTION: RUN QUERY AND RETURN JSON
+# FUNCTION: RUN SQL AND RETURN ROWS
 # ------------------------------------------------------------
-def run_query_to_json(sql: str):
+def run_query(sql: str):
     conn = get_connection()
     cursor = conn.cursor()
 
@@ -48,37 +54,44 @@ def run_query_to_json(sql: str):
     if cursor.description is None:
         cursor.close()
         conn.close()
-        return {"error": "SQL executed successfully but returned no result set"}
+        return [], []
 
     columns = [col[0] for col in cursor.description]
     rows = cursor.fetchall()
 
     print(f">>> ROWS RETURNED: {len(rows)}")
 
-    results = [dict(zip(columns, row)) for row in rows]
-
     cursor.close()
     conn.close()
 
-    return results
+    return columns, rows
+
+
+# ------------------------------------------------------------
+# FUNCTION: WRITE OUTPUT TO region_landDistrict.txt
+# ------------------------------------------------------------
+def write_to_txt(columns, rows, output_path):
+    output_file = Path(output_path)
+
+    # Clear the file first
+    output_file.write_text("", encoding="utf-8")
+
+    with output_file.open("a", encoding="utf-8") as f:
+        # Write header
+        f.write("\t".join(columns) + "\n")
+
+        # Write rows
+        for row in rows:
+            row_str = "\t".join([str(x) if x is not None else "" for x in row])
+            f.write(row_str + "\n")
+
+    print(f">>> TXT exported to: {output_file.resolve()}")
 
 
 # ------------------------------------------------------------
 # MAIN
 # ------------------------------------------------------------
 if __name__ == "__main__":
-    # -----------------------------------------
-    # Ask user for SQL file path
-    # -----------------------------------------
-    sql_path = "sale.sql"
-
-    sql_code = load_sql_from_file(sql_path)
-    results = run_query_to_json(sql_code)
-
-    # -----------------------------------------
-    # Export JSON to file
-    # -----------------------------------------
-    output_path = Path("output.json")
-    output_path.write_text(json.dumps(results, indent=4, default=str), encoding="utf-8")
-
-    print(f">>> JSON exported to: {output_path.resolve()}")
+    sql_code = load_sql_from_file(SQL_FILE_PATH)
+    columns, rows = run_query(sql_code)
+    write_to_txt(columns, rows, OUTPUT_FILE_PATH)
