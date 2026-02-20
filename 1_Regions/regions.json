@@ -1,0 +1,29 @@
+{
+  "regions": [
+    {
+      "code": "1",
+      "label": "Duchesne/Myton",
+      "subtypes": []
+    },
+    {
+      "code": "2",
+      "label": "Roosevelt",
+      "subtypes": []
+    },
+    {
+      "code": "3",
+      "label": "Fruitland",
+      "subtypes": []
+    }, 
+    {
+      "code": "4",
+      "label": "Upper Country/Neola",
+      "subtypes": []
+    }, 
+    {
+      "code": "5",
+      "label": "Tabiona/ Argyle",
+      "subtypes": []
+    } 
+  ]
+}

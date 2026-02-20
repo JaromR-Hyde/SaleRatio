@@ -1,0 +1,70 @@
+{
+  "profiles": [
+    {
+      "code": "A",
+      "label": "Residential",
+      "subtypes": [
+        
+      ]
+    },
+    {
+      "code": "B",
+      "label": "Residential",
+      "subtypes": [
+        "Single Family",
+        "Multi Family",
+        "Cabins",
+        "Manufactured Homes"
+      ]
+    },
+    {
+      "code": "D",
+      "label": "Commercial",
+      "subtypes": [
+        "Retail",
+        "Office",
+        "Industrial",
+        "Warehouse"
+      ]
+    },
+    {
+      "code": "E",
+      "label": "Vacant Land",
+      "subtypes": [
+        "Rural",
+        "Urban",
+        "Agricultural"
+      ]
+    },
+    {
+      "code": "F",
+      "label": "Condos",
+      "subtypes": []
+    },
+    {
+      "code": "G",
+      "label": "Sheds and Stuff",
+      "subtypes": []
+    },
+    {
+      "code": "H",
+      "label": "Mixed Use",
+      "subtypes": []
+    },
+    {
+      "code": "I",
+      "label": "Exempt",
+      "subtypes": []
+    },
+    {
+      "code": "J",
+      "label": "Multi Res",
+      "subtypes": []
+    },
+    {
+      "code": "K",
+      "label": "MFG",
+      "subtypes": []
+    }
+  ]
+}
