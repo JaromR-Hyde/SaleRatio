@@ -53,8 +53,36 @@ function parseCSV(csv) {
   return lines.slice(1).map(row => {
     const cols = row.split(',');
     const obj = {};
-    headers.forEach((h, i) => obj[h] = cols[i]);
-    obj.RATIO = parseFloat(obj.RATIO);
+
+    headers.forEach((h, i) => {
+      let val = cols[i]?.trim().replace(/\r/g, "");
+
+      // Normalize NULL or empty
+      if (val === "" || val === "NULL") {
+        obj[h] = null;
+        return;
+      }
+
+      // Explicitly convert RATIO to number
+      if (h === "RATIO") {
+        obj[h] = Number(val);
+        return;
+      }
+
+      // Normalize region fields as strings
+      if (h === "NBHD_REGION" || h === "NBHD_CODE" || h === "LAND_DISTRICT") {
+        obj[h] = val.toString();
+        return;
+      }
+
+      // Convert numeric fields
+      if (!isNaN(val)) {
+        obj[h] = Number(val);
+      } else {
+        obj[h] = val;
+      }
+    });
+
     return obj;
   });
 }
@@ -204,24 +232,20 @@ function applyFilters() {
   const subtype = document.getElementById('subRegion').value || null;
   const district = document.getElementById('landDistrict').value || null;
 
-  const filterState = {
-    timestamp: new Date().toISOString(),
-    region,
-    subtype,
-    district
-  };
+  console.log("FILTERS APPLIED:", { region, subtype, district });
+  console.log("CSV LOADED:", salesData.length);
 
-  filterLog.push(filterState);
-  window.currentFilterLog = filterLog;
-
-  console.log("FILTERS APPLIED:", filterState);
-
+  // MUST come before debug logs
   const filtered = salesData.filter(row => {
-    if (region && !row.NBHD_CODE.startsWith(region)) return false;
-    if (subtype && row.NBHD_CODE !== subtype) return false;
-    if (district && row.LAND_DISTRICT !== district) return false;
-    return true;
+      if (region && row.NBHD_REGION !== region) return false;
+      if (subtype && row.NBHD_CODE !== subtype) return false;
+      if (district && row.LAND_DISTRICT !== district) return false;
+      return true;
   });
+
+  // Debug logs AFTER filtered is created
+  console.log("FILTERED ROW COUNT:", filtered.length);
+  console.log("SUMMARY INPUT:", filtered);
 
   const summary = computeSummary(filtered);
   updateSummaryBlock(summary);
@@ -276,6 +300,12 @@ function computeSummary(rows) {
 // ===============================================================
 // STEP 10: UPDATE SUMMARY BLOCK (YOU STYLE THIS IN HTML/CSS)
 // ===============================================================
+function safe(value, digits = 4) {
+  return (typeof value === "number" && !isNaN(value))
+    ? value.toFixed(digits)
+    : "—";
+}
+
 function updateSummaryBlock(summary) {
   if (!summary) {
     document.getElementById("summaryBlock").innerHTML = "No sales match filters.";
@@ -285,17 +315,17 @@ function updateSummaryBlock(summary) {
   document.getElementById("summaryBlock").innerHTML = `
     <div class="summary-grid">
       <div>No Sales: ${summary.count}</div>
-      <div>PRD: ${summary.PRD.toFixed(2)}</div>
-      <div>DWM: ${summary.DWM.toFixed(4)}</div>
-      <div>Median: ${summary.median.toFixed(4)}</div>
-      <div>Med Upper: ${summary.medUpper.toFixed(4)}</div>
-      <div>Med Lower: ${summary.medLower.toFixed(4)}</div>
-      <div>Mean: ${summary.mean.toFixed(4)}</div>
-      <div>Mean Upper: ${summary.meanUpper.toFixed(4)}</div>
-      <div>Mean Lower: ${summary.meanLower.toFixed(4)}</div>
-      <div>COD: ${summary.COD.toFixed(2)}</div>
-      <div>COV: ${summary.COV.toFixed(2)}</div>
-      <div>Normal Distribution: ${summary.normal}</div>
+      <div>PRD: ${safe(summary.PRD, 2)}</div>
+      <div>DWM: ${safe(summary.DWM)}</div>
+      <div>Median: ${safe(summary.median)}</div>
+      <div>Med Upper: ${safe(summary.medUpper)}</div>
+      <div>Med Lower: ${safe(summary.medLower)}</div>
+      <div>Mean: ${safe(summary.mean)}</div>
+      <div>Mean Upper: ${safe(summary.meanUpper)}</div>
+      <div>Mean Lower: ${safe(summary.meanLower)}</div>
+      <div>COD: ${safe(summary.COD, 2)}</div>
+      <div>COV: ${safe(summary.COV, 2)}</div>
+      <div>Normal Distribution: ${summary.normal || "—"}</div>
     </div>
   `;
 }
