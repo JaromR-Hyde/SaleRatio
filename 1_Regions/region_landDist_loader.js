@@ -264,25 +264,35 @@ function computeSummary(rows) {
 // ===============================================================
 // STEP 9: UPDATE SUMMARY BLOCK
 // ===============================================================
+// ===============================================================
+// SAFE NUMBER FORMATTER
+// ===============================================================
 function safe(value, digits = 4) {
   return (typeof value === "number" && !isNaN(value))
     ? value.toFixed(digits)
     : "—";
 }
 
+
+// ===============================================================
+// COLOR CLASS FOR PRD, COD, COV
+// ===============================================================
 function colorClass(metric, value) {
   switch (metric) {
 
+    // PRD thresholds
     case "PRD":
       if (value >= 0.98 && value <= 1.03) return "green";
       if ((value >= 0.95 && value < 0.98) || (value > 1.03 && value <= 1.06)) return "yellow";
       return "red";
 
+    // COD thresholds
     case "COD":
       if (value <= 20) return "green";
       if (value <= 25) return "yellow";
       return "red";
 
+    // COV thresholds
     case "COV":
       if (value <= 25) return "green";
       if (value <= 30) return "yellow";
@@ -293,6 +303,20 @@ function colorClass(metric, value) {
   }
 }
 
+
+// ===============================================================
+// COMPLIANCE COLOR FOR MEAN / MEDIAN (95%–105%)
+// ===============================================================
+function complianceColor(value) {
+  if (value >= 0.95 && value <= 1.05) return "green";
+  if ((value >= 0.90 && value < 0.95) || (value > 1.05 && value <= 1.10)) return "yellow";
+  return "red";
+}
+
+
+// ===============================================================
+// SUMMARY BLOCK RENDERER
+// ===============================================================
 function updateSummaryBlock(summary) {
   if (!summary) {
     document.getElementById("summaryBlock").innerHTML = "No sales match filters.";
@@ -301,6 +325,7 @@ function updateSummaryBlock(summary) {
 
   const normal = summary.normal === "Yes";
 
+  // Grey-out logic
   const greyMean = !normal;
   const greyMedian = normal;
 
@@ -309,6 +334,7 @@ function updateSummaryBlock(summary) {
 
       <div>No Sales: ${summary.count}</div>
 
+      <!-- PRD -->
       <div class="tooltip ${colorClass('PRD', summary.PRD)}">
         PRD: ${safe(summary.PRD, 2)}
         <span class="tooltiptext">
@@ -319,6 +345,7 @@ function updateSummaryBlock(summary) {
         </span>
       </div>
 
+      <!-- DWM -->
       <div class="tooltip">
         DWM: ${safe(summary.DWM)}
         <span class="tooltiptext">
@@ -327,48 +354,43 @@ function updateSummaryBlock(summary) {
         </span>
       </div>
 
-      <div class="tooltip ${greyMedian ? 'greyed' : ''}">
+      <!-- MEDIAN FAMILY -->
+      <div class="tooltip ${greyMedian ? 'greyed' : complianceColor(summary.median)}">
         Median: ${safe(summary.median)}
         <span class="tooltiptext">
-          Median ratio — preferred when data is not normally distributed.
+          Median should fall between 0.95 and 1.05 to meet standards.
         </span>
       </div>
 
       <div class="tooltip ${greyMedian ? 'greyed' : ''}">
         Med Upper: ${safe(summary.medUpper)}
-        <span class="tooltiptext">
-          101.6% of median — upper confidence bound.
-        </span>
+        <span class="tooltiptext">101.6% of median — upper confidence bound.</span>
       </div>
 
       <div class="tooltip ${greyMedian ? 'greyed' : ''}">
         Med Lower: ${safe(summary.medLower)}
-        <span class="tooltiptext">
-          98% of median — lower confidence bound.
-        </span>
+        <span class="tooltiptext">98% of median — lower confidence bound.</span>
       </div>
 
-      <div class="tooltip ${greyMean ? 'greyed' : ''}">
+      <!-- MEAN FAMILY -->
+      <div class="tooltip ${greyMean ? 'greyed' : complianceColor(summary.mean)}">
         Mean: ${safe(summary.mean)}
         <span class="tooltiptext">
-          Mean ratio — used only when distribution is normal.
+          Mean should fall between 0.95 and 1.05 to meet standards.
         </span>
       </div>
 
       <div class="tooltip ${greyMean ? 'greyed' : ''}">
         Mean Upper: ${safe(summary.meanUpper)}
-        <span class="tooltiptext">
-          95% confidence upper bound of mean.
-        </span>
+        <span class="tooltiptext">95% confidence upper bound of mean.</span>
       </div>
 
       <div class="tooltip ${greyMean ? 'greyed' : ''}">
         Mean Lower: ${safe(summary.meanLower)}
-        <span class="tooltiptext">
-          95% confidence lower bound of mean.
-        </span>
+        <span class="tooltiptext">95% confidence lower bound of mean.</span>
       </div>
 
+      <!-- COD -->
       <div class="tooltip ${greyMedian ? 'greyed' : colorClass('COD', summary.COD)}">
         COD: ${safe(summary.COD, 2)}
         <span class="tooltiptext">
@@ -379,6 +401,7 @@ function updateSummaryBlock(summary) {
         </span>
       </div>
 
+      <!-- COV -->
       <div class="tooltip ${greyMean ? 'greyed' : colorClass('COV', summary.COV)}">
         COV: ${safe(summary.COV, 2)}
         <span class="tooltiptext">
@@ -389,6 +412,7 @@ function updateSummaryBlock(summary) {
         </span>
       </div>
 
+      <!-- NORMALITY -->
       <div class="tooltip">
         Normal Distribution: ${summary.normal}
         <span class="tooltiptext">

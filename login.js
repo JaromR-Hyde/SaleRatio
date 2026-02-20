@@ -6,23 +6,23 @@ document.getElementById("loginForm").addEventListener("submit", async function (
     const errorMessage = document.getElementById("errorMessage");
 
     try {
-        // --- LOAD CREDENTIALS FILE ---
+        // LOAD CREDENTIALS
         const response = await fetch("credentials.json");
         const data = await response.json();
 
-        // --- FIND MATCHING USER ---
+        // FIND USER
         const user = data.users.find(u =>
             u.username === username && u.password === password
         );
 
         if (user) {
-            // --- STORE USER CONTEXT FOR THE ENTIRE APP ---
+            // STORE USER CONTEXT
             sessionStorage.setItem("user", JSON.stringify({
                 username: user.username,
                 jurisdiction: user.jurisdiction
             }));
 
-            // --- REDIRECT TO MAIN APP ---
+            // REDIRECT TO MAIN APP
             window.location.href = "index.html";
         } else {
             errorMessage.textContent = "Invalid username or password.";
