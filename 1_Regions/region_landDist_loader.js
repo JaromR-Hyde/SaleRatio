@@ -14,7 +14,7 @@ let filterLog = [];   // <-- LOG FILE (in-memory array)
 Promise.all([
   fetch('regions.json').then(r => r.json()),
   fetch('region_landDistrict.txt').then(r => r.text()),
-  fetch('../sale.csv').then(r => r.text())
+  fetch('../Data/sale.csv').then(r => r.text())
 ])
 .then(([jsonData, txtText, csvText]) => {
   regionData = jsonData.regions;
