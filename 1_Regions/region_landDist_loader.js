@@ -270,26 +270,132 @@ function safe(value, digits = 4) {
     : "—";
 }
 
+function colorClass(metric, value) {
+  switch (metric) {
+
+    case "PRD":
+      if (value >= 0.98 && value <= 1.03) return "green";
+      if ((value >= 0.95 && value < 0.98) || (value > 1.03 && value <= 1.06)) return "yellow";
+      return "red";
+
+    case "COD":
+      if (value <= 20) return "green";
+      if (value <= 25) return "yellow";
+      return "red";
+
+    case "COV":
+      if (value <= 25) return "green";
+      if (value <= 30) return "yellow";
+      return "red";
+
+    default:
+      return "";
+  }
+}
+
 function updateSummaryBlock(summary) {
   if (!summary) {
     document.getElementById("summaryBlock").innerHTML = "No sales match filters.";
     return;
   }
 
+  const normal = summary.normal === "Yes";
+
+  const greyMean = !normal;
+  const greyMedian = normal;
+
   document.getElementById("summaryBlock").innerHTML = `
     <div class="summary-grid">
+
       <div>No Sales: ${summary.count}</div>
-      <div>PRD: ${safe(summary.PRD, 2)}</div>
-      <div>DWM: ${safe(summary.DWM)}</div>
-      <div>Median: ${safe(summary.median)}</div>
-      <div>Med Upper: ${safe(summary.medUpper)}</div>
-      <div>Med Lower: ${safe(summary.medLower)}</div>
-      <div>Mean: ${safe(summary.mean)}</div>
-      <div>Mean Upper: ${safe(summary.meanUpper)}</div>
-      <div>Mean Lower: ${safe(summary.meanLower)}</div>
-      <div>COD: ${safe(summary.COD, 2)}</div>
-      <div>COV: ${safe(summary.COV, 2)}</div>
-      <div>Normal Distribution: ${summary.normal || "—"}</div>
+
+      <div class="tooltip ${colorClass('PRD', summary.PRD)}">
+        PRD: ${safe(summary.PRD, 2)}
+        <span class="tooltiptext">
+          PRD measures vertical equity.<br>
+          Green: 0.98–1.03<br>
+          Yellow: 0.95–0.98 or 1.03–1.06<br>
+          Red: <0.95 or >1.06
+        </span>
+      </div>
+
+      <div class="tooltip">
+        DWM: ${safe(summary.DWM)}
+        <span class="tooltiptext">
+          DWM is the median-to-mean ratio.<br>
+          Used to detect skewness.
+        </span>
+      </div>
+
+      <div class="tooltip ${greyMedian ? 'greyed' : ''}">
+        Median: ${safe(summary.median)}
+        <span class="tooltiptext">
+          Median ratio — preferred when data is not normally distributed.
+        </span>
+      </div>
+
+      <div class="tooltip ${greyMedian ? 'greyed' : ''}">
+        Med Upper: ${safe(summary.medUpper)}
+        <span class="tooltiptext">
+          101.6% of median — upper confidence bound.
+        </span>
+      </div>
+
+      <div class="tooltip ${greyMedian ? 'greyed' : ''}">
+        Med Lower: ${safe(summary.medLower)}
+        <span class="tooltiptext">
+          98% of median — lower confidence bound.
+        </span>
+      </div>
+
+      <div class="tooltip ${greyMean ? 'greyed' : ''}">
+        Mean: ${safe(summary.mean)}
+        <span class="tooltiptext">
+          Mean ratio — used only when distribution is normal.
+        </span>
+      </div>
+
+      <div class="tooltip ${greyMean ? 'greyed' : ''}">
+        Mean Upper: ${safe(summary.meanUpper)}
+        <span class="tooltiptext">
+          95% confidence upper bound of mean.
+        </span>
+      </div>
+
+      <div class="tooltip ${greyMean ? 'greyed' : ''}">
+        Mean Lower: ${safe(summary.meanLower)}
+        <span class="tooltiptext">
+          95% confidence lower bound of mean.
+        </span>
+      </div>
+
+      <div class="tooltip ${greyMedian ? 'greyed' : colorClass('COD', summary.COD)}">
+        COD: ${safe(summary.COD, 2)}
+        <span class="tooltiptext">
+          COD measures uniformity.<br>
+          Green: ≤20<br>
+          Yellow: 20–25<br>
+          Red: >25
+        </span>
+      </div>
+
+      <div class="tooltip ${greyMean ? 'greyed' : colorClass('COV', summary.COV)}">
+        COV: ${safe(summary.COV, 2)}
+        <span class="tooltiptext">
+          COV measures variability.<br>
+          Green: ≤25<br>
+          Yellow: 25–30<br>
+          Red: >30
+        </span>
+      </div>
+
+      <div class="tooltip">
+        Normal Distribution: ${summary.normal}
+        <span class="tooltiptext">
+          Indicates whether the ratio distribution meets normality standards.
+        </span>
+      </div>
+
     </div>
   `;
 }
