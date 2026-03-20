@@ -3,12 +3,58 @@
   <head>
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <meta charset="UTF-8" />
-    <title>Parcel Lookup</title>
+    <title>Sale Ratio Dashboard</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
   </head>
   <body>
-    <h1>Sale Ratio Summary Report</h1>
-    <h2></h2>
+    <div class="top-nav">
+        <span id="userContext">Loading Session...</span>
+        <button id="logoutBtn" class="logout-btn">Logout & Exit</button>
+    </div>
+
+    <div class="summary-container">
+        <h1>Column Selection & Filters</h1>
+        
+        <div id="filter-builder" style="background: #f0f0f0; padding: 20px; border-radius: 8px; border: 1px solid #ccc; margin-bottom: 20px;">
+            <div id="filter-rows-container">
+                </div>
+            
+            <div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
+                <button id="addFilterBtn" class="form-input" style="width: auto; cursor: pointer;">+ Add Filter</button>
+                <button id="applyFiltersBtn" class="logout-btn" style="background-color: #007BFF; width: auto;">Apply Filters</button>
+                <button id="exportExcelBtn" class="form-input" style="width: auto; background-color: #0a7d00; color: white; cursor: pointer;">Export to Excel</button>
+                <button id="clearFiltersBtn" class="form-input" style="width: auto; cursor: pointer;">Reset All</button>
+            </div>
+        </div>
+
+        <div class="summary-grid">
+            <div>Total Sales: <span id="totalSales" class="green">0</span></div>
+            <div>Filtered Results: <span id="filteredCount" class="yellow">0</span></div>
+            <div>Report Year: <span>2026</span></div>
+        </div>
+
+        <div style="overflow-x: auto; margin-top: 20px;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Jurisdiction</th>
+                        <th>Region</th>
+                        <th>Parcel ID</th>
+                        <th>Sale Date</th>
+                        <th>Adjusted Sale Price</th>
+                        <th>Land Value</th>
+                        <th>Imp Value</th>
+                        <th>Total Value</th>
+                        <th>Ratio</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="dashboard.js"></script>
   </body>
 </html>
 

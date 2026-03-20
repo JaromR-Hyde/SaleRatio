@@ -3,6 +3,8 @@ import json
 import getpass
 from pathlib import Path
 import config
+import webbrowser
+import os
 
 def authenticate_user():
     """Checks console input against credentials.json"""
@@ -27,45 +29,57 @@ def authenticate_user():
         print(f">>> ERROR: {e}")
         return None
 
+def authenticate_user():
+    username = input("Username: ").strip()
+    password = getpass.getpass("Password: ")
+    try:
+        data = json.loads(Path("credentials.json").read_text())
+        user = next((u for u in data['users'] if u['username'] == username and u['password'] == password), None)
+        if user:
+            print(f">>> Welcome, {user['username']}!")
+            return user
+        print(">>> ERROR: Invalid credentials.")
+        return None
+    except Exception as e:
+        print(f">>> ERROR: {e}"); return None
+
 def main():
     user_context = authenticate_user()
-    if not user_context:
-        return
+    if not user_context: return
 
     try:
-        # 1. Load the SQL template
-        sql_file = Path("sale.sql")
-        query = sql_file.read_text(encoding="utf-8")
-
-        # 2. Setup Connection using the County from credentials
+        # 1. Database Connection & Query
         prefix = config.COUNTY_SERVERS.get(user_context['county'])
-        full_server = f"{prefix}{config.SERVER_SUFFIX}"
-        
         conn_str = (
-            "DRIVER={ODBC Driver 17 for SQL Server};"
-            f"SERVER={full_server};"
-            f"DATABASE={config.DB_NAME};"
-            "Authentication=ActiveDirectoryInteractive;"
-            f"UID={config.DB_USER};"
+            f"DRIVER={{ODBC Driver 17 for SQL Server}};SERVER={prefix}{config.SERVER_SUFFIX};"
+            f"DATABASE={config.DB_NAME};Authentication=ActiveDirectoryInteractive;UID={config.DB_USER};"
         )
-
-        print(f"\n>>> Connecting to {full_server}...")
+        
+        query = Path("sale.sql").read_text(encoding="utf-8")
+        
+        print(f"\n>>> Connecting to {user_context['county']} server...")
         with pyodbc.connect(conn_str) as conn:
             with conn.cursor() as cursor:
-                
-                # 3. DYNAMIC EXECUTION
-                # We pass user_context['jurisdiction'] as the second argument
-                # This replaces the '?' in your SQL file
-                print(f">>> Running query for Jurisdiction: {user_context['jurisdiction']}...")
                 cursor.execute(query, user_context['jurisdiction'])
-                
                 columns = [col[0] for col in cursor.description]
                 results = [dict(zip(columns, row)) for row in cursor.fetchall()]
 
-                # 4. Save Output
-                output = Path("output.json")
-                output.write_text(json.dumps(results, indent=4, default=str))
-                print(f">>> SUCCESS: {len(results)} rows saved to {output.name}")
+        # 2. Save Data & Session Context
+        Path("output.json").write_text(json.dumps(results, indent=4, default=str))
+        
+        session_info = {
+            "username": user_context['username'],
+            "county": user_context['county'],
+            "jurisdiction": user_context['jurisdiction']
+        }
+        Path("session.json").write_text(json.dumps(session_info))
+
+        # 3. Launch the View Server
+        print(">>> Launching Dashboard...")
+        webbrowser.open("http://localhost:8000")
+        
+        # This calls your separate view_server.py logic
+        os.system("python view_server.py")
 
     except Exception as e:
         print(f">>> CRITICAL ERROR: {e}")

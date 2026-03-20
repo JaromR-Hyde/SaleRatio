@@ -6,78 +6,39 @@ body {
 }
 
 /* === Navigation Bar === */
-.navbar {
-  background-color: #333;
-  padding: 1em;
-}
-
-.nav-link {
-  color: white;
-  margin-right: 20px;
-  text-decoration: none;
-  font-weight: bold;
-}
-
-.nav-link:hover {
-  text-decoration: underline;
-  color: #ddd;
-}
-
-/* Nav bar styling */
 .top-nav {
   display: flex;
   flex-wrap: wrap;
-  justify-content: flex-start;
+  justify-content: space-between; /* Adjusted to push logout to the right */
+  align-items: center;
   gap: 12px;
-  padding: 8px 3rem 24px 24px; /* top, right, bottom, left */
-  background-color: #f6f6f6;
+  padding: 12px 24px;
+  background-color: #333; /* Dark theme to contrast with white body */
+  color: white;
   font-family: sans-serif;
+  border-radius: 8px 8px 0 0;
 }
 
-.top-nav a {
-  padding: 0.5rem 1rem;
-  color: #333;
-  text-decoration: none;
-  border-bottom: 2px solid transparent;
-  transition: all 0.3s ease;
-  white-space: nowrap;
+.top-nav span {
+    font-weight: bold;
 }
 
-.top-nav a:hover {
-  border-bottom: 2px solid #888;
-}
-
-.top-nav a.active {
-  border-bottom: 3px solid #007BFF;
+.logout-btn {
+  background-color: #b30000; /* Matching your red class */
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
   font-weight: bold;
-  color: #000;
+  transition: background 0.3s ease;
 }
 
-.form-row {
-  display: flex;
-  flex-direction: column;
-  margin-bottom: 16px;
+.logout-btn:hover {
+  background-color: #8e0000;
 }
 
-.form-row label {
-  font-weight: 600;
-  margin-bottom: 6px;
-}
-
-.form-input {
-  padding: 10px 12px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  font-size: 15px;
-  background-color: #fff;
-}
-
-.form-input:focus {
-  border-color: #0078d4;
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(0, 120, 212, 0.2);
-}
-
+/* === Summary Container & Grid === */
 .summary-container {
     margin-top: 25px;
     padding: 20px;
@@ -85,7 +46,7 @@ body {
     border: 2px solid #ccc;
     border-radius: 8px;
     width: 100%;
-    max-width: 900px;
+    max-width: 1000px;
 }
 
 .summary-grid {
@@ -94,6 +55,7 @@ body {
     gap: 12px 20px;
     font-size: 15px;
     line-height: 1.4;
+    margin-bottom: 20px;
 }
 
 .summary-grid div {
@@ -105,55 +67,35 @@ body {
     box-shadow: 0 1px 2px rgba(0,0,0,0.05);
 }
 
-.green {
-  color: #0a7d00;
-  font-weight: 600;
-}
-
-.yellow {
-  color: #c7a600;
-  font-weight: 600;
-}
-
-.red {
-  color: #b30000;
-  font-weight: 600;
-}
-
-.greyed {
-  opacity: 0.35;
-  color: #777;
-}
-
-.tooltip {
-  position: relative;
-  cursor: help;
-}
-
-.tooltip .tooltiptext {
-  visibility: hidden;
-  width: 220px;
-  background-color: #333;
-  color: #fff;
-  text-align: left;
-  border-radius: 6px;
-  padding: 8px;
-  position: absolute;
-  z-index: 10;
-  bottom: 125%;
-  left: 50%;
-  transform: translateX(-50%);
-  opacity: 0;
-  transition: opacity 0.25s;
-  font-size: 0.85rem;
-}
-
-.tooltip:hover .tooltiptext {
-  visibility: visible;
-  opacity: 1;
-}
-
+/* === Color Patterns === */
 .green { color: #0a7d00; font-weight: 600; }
 .yellow { color: #c7a600; font-weight: 600; }
 .red { color: #b30000; font-weight: 600; }
 .greyed { opacity: 0.35; color: #777; }
+
+/* === Data Table === */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    margin-top: 20px;
+}
+
+th, td {
+    text-align: left;
+    padding: 12px;
+    border-bottom: 1px solid #ddd;
+}
+
+th {
+    background-color: #f2f2f2;
+    font-weight: 600;
+}
+
+tr:hover {
+    background-color: #f9f9f9;
+}
+
+#exportExcelBtn:hover {
+    background-color: #086300 !important;
+}
