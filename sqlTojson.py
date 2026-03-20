@@ -3,82 +3,63 @@ import json
 from pathlib import Path
 import config
 
-
 # ------------------------------------------------------------
-# FUNCTION: READ SQL FROM FILE
-# ------------------------------------------------------------
-def load_sql_from_file(path: str) -> str:
-    sql_path = Path(path)
-    if not sql_path.exists():
-        raise FileNotFoundError(f"SQL file not found: {path}")
-    return sql_path.read_text(encoding="utf-8")
-
-
-# ------------------------------------------------------------
-# FUNCTION: CONNECT TO SQL SERVER
+# FUNCTION: CONNECT WITH MFA (Interactive)
 # ------------------------------------------------------------
 def get_connection():
+    """
+    Connects using Azure Active Directory Interactive MFA.
+    Note: Ensure your 'config.py' has the correct Database and Server.
+    """
+    # Active Directory Interactive is the standard for MFA prompts
+    conn_str = (
+        "DRIVER={ODBC Driver 17 for SQL Server};"
+        f"SERVER={config.DB_SERVER};"
+        f"DATABASE={config.DB_NAME};"
+        "Authentication=ActiveDirectoryInteractive;" 
+        f"UID={config.DB_USER};" # Your Entrata/AD email address
+    )
+    
     try:
-        conn = pyodbc.connect(
-            "DRIVER={ODBC Driver 17 for SQL Server};"
-            f"SERVER={config.DB_SERVER};"
-            f"DATABASE={config.DB_NAME};"
-            f"UID={config.DB_USER};"
-            f"PWD={config.DB_PASSWORD};"
-        )
-        print(">>> SUCCESS: Connected to SQL Server")
-        return conn
-
+        # No 'PWD' needed here; the browser handles the password/MFA
+        print(">>> OPENING BROWSER FOR MFA AUTHENTICATION...")
+        return pyodbc.connect(conn_str)
     except Exception as e:
-        print(">>> ERROR: Failed to connect to SQL Server")
-        print(">>> DETAILS:", e)
+        print(f">>> ERROR: Connection failed. Check your VPN or UID. \n{e}")
         raise
 
-
 # ------------------------------------------------------------
-# FUNCTION: RUN QUERY AND RETURN JSON
+# FUNCTION: RUN QUERY (With Context Managers)
 # ------------------------------------------------------------
 def run_query_to_json(sql: str):
-    conn = get_connection()
-    cursor = conn.cursor()
+    # Using 'with' ensures the connection closes automatically
+    with get_connection() as conn:
+        with conn.cursor() as cursor:
+            cursor.execute(sql)
 
-    cursor.execute(sql)
+            if cursor.description is None:
+                return {"message": "Success, but no rows returned."}
 
-    # If SQL returned no result set
-    if cursor.description is None:
-        cursor.close()
-        conn.close()
-        return {"error": "SQL executed successfully but returned no result set"}
-
-    columns = [col[0] for col in cursor.description]
-    rows = cursor.fetchall()
-
-    print(f">>> ROWS RETURNED: {len(rows)}")
-
-    results = [dict(zip(columns, row)) for row in rows]
-
-    cursor.close()
-    conn.close()
-
-    return results
-
+            columns = [col[0] for col in cursor.description]
+            
+            # Generator expression to handle rows one-by-one (memory efficient)
+            return [dict(zip(columns, row)) for row in cursor.fetchall()]
 
 # ------------------------------------------------------------
-# MAIN
+# MAIN EXECUTION
 # ------------------------------------------------------------
 if __name__ == "__main__":
-    # -----------------------------------------
-    # Ask user for SQL file path
-    # -----------------------------------------
-    sql_path = "sale.sql"
+    try:
+        sql_path = Path("sale.sql")
+        if not sql_path.exists():
+            print(f"Error: {sql_path} not found.")
+        else:
+            query = sql_path.read_text(encoding="utf-8")
+            data = run_query_to_json(query)
 
-    sql_code = load_sql_from_file(sql_path)
-    results = run_query_to_json(sql_code)
-
-    # -----------------------------------------
-    # Export JSON to file
-    # -----------------------------------------
-    output_path = Path("output.json")
-    output_path.write_text(json.dumps(results, indent=4, default=str), encoding="utf-8")
-
-    print(f">>> JSON exported to: {output_path.resolve()}")
+            output = Path("output.json")
+            output.write_text(json.dumps(data, indent=4, default=str))
+            print(f">>> SUCCESS: Data exported to {output.resolve()}")
+            
+    except Exception as e:
+        print(f">>> CRITICAL FAILURE: {e}")
