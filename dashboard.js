@@ -1,6 +1,6 @@
 /* === GLOBAL STATE === */
 let allSales = []; 
-let currentFilteredData = []; // Tracks the data currently displayed after filtering
+let currentFilteredData = []; 
 
 /**
  * INIT DASHBOARD
@@ -12,7 +12,7 @@ async function initDashboard() {
         
         const dataReq = await fetch('output.json');
         allSales = await dataReq.json();
-        currentFilteredData = [...allSales]; // Start with full dataset
+        currentFilteredData = [...allSales];
 
         document.getElementById('userContext').textContent = 
             `User: ${session.username} | County: ${session.county} | Jurisdiction: ${session.jurisdiction}`;
@@ -20,7 +20,6 @@ async function initDashboard() {
         addFilterRow();
         renderTable(allSales);
 
-        // Event Listeners
         document.getElementById('addFilterBtn').addEventListener('click', addFilterRow);
         document.getElementById('applyFiltersBtn').addEventListener('click', applyAllFilters);
         document.getElementById('exportExcelBtn').addEventListener('click', exportToExcel);
@@ -48,20 +47,51 @@ function addFilterRow() {
     rowDiv.className = "filter-row";
     rowDiv.style = "display: flex; gap: 10px; margin-bottom: 10px; align-items: center; background: #fff; padding: 10px; border-radius: 4px; border: 1px solid #ddd;";
 
-    rowDiv.innerHTML = `
-        <select class="form-input filter-field" style="width: 200px;">
-            ${keys.map(k => `<option value="${k}">${k.replace(/_/g, ' ')}</option>`).join('')}
-        </select>
-        <select class="form-input filter-operator" style="width: 120px;">
-            <option value="contains">contains</option>
-            <option value="equals">equals</option>
-            <option value="greater"> &gt; </option>
-            <option value="less"> &lt; </option>
-        </select>
-        <input type="text" class="form-input filter-value" placeholder="Value..." style="flex-grow: 1;">
-        <button onclick="this.parentElement.remove()" style="background: none; border: none; color: #b30000; cursor: pointer; font-weight: bold;">✕</button>
+    const fieldSelect = document.createElement('select');
+    fieldSelect.className = "form-input filter-field";
+    fieldSelect.style.width = "200px";
+    fieldSelect.innerHTML = keys.map(k => `<option value="${k}">${k.replace(/_/g, ' ')}</option>`).join('');
+
+    const opSelect = document.createElement('select');
+    opSelect.className = "form-input filter-operator";
+    opSelect.style.width = "120px";
+    opSelect.innerHTML = `
+        <option value="equals">equals</option>
+        <option value="contains">contains</option>
+        <option value="greater"> &gt; </option>
+        <option value="less"> &lt; </option>
     `;
+
+    const valSelect = document.createElement('select');
+    valSelect.className = "form-input filter-value";
+    valSelect.style.flexGrow = "1";
+
+    const delBtn = document.createElement('button');
+    delBtn.innerHTML = "✕";
+    delBtn.style = "background: none; border: none; color: #b30000; cursor: pointer; font-weight: bold;";
+    delBtn.onclick = () => rowDiv.remove();
+
+    rowDiv.appendChild(fieldSelect);
+    rowDiv.appendChild(opSelect);
+    rowDiv.appendChild(valSelect);
+    rowDiv.appendChild(delBtn);
     container.appendChild(rowDiv);
+
+    updateValueOptions(fieldSelect, valSelect);
+    fieldSelect.addEventListener('change', () => updateValueOptions(fieldSelect, valSelect));
+}
+
+/**
+ * UPDATE VALUE OPTIONS
+ */
+function updateValueOptions(fieldElem, valueElem) {
+    const selectedField = fieldElem.value;
+    const uniqueValues = [...new Set(allSales.map(item => item[selectedField]))]
+        .filter(val => val !== null && val !== undefined && val !== "")
+        .sort();
+
+    valueElem.innerHTML = `<option value="">-- Select Value --</option>` + 
+        uniqueValues.map(v => `<option value="${v}">${v}</option>`).join('');
 }
 
 /**
@@ -94,7 +124,7 @@ function applyAllFilters() {
         });
     });
 
-    currentFilteredData = filteredData; // Sync export data with view
+    currentFilteredData = filteredData;
     renderTable(filteredData);
 }
 
@@ -102,17 +132,10 @@ function applyAllFilters() {
  * EXPORT TO EXCEL
  */
 function exportToExcel() {
-    if (currentFilteredData.length === 0) {
-        alert("No data available to export.");
-        return;
-    }
-
-    // Convert JSON data to worksheet
+    if (currentFilteredData.length === 0) return;
     const worksheet = XLSX.utils.json_to_sheet(currentFilteredData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Sales_Data");
-
-    // Generate filename with timestamp
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
     XLSX.writeFile(workbook, `Sale_Ratio_Export_${timestamp}.xlsx`);
 }
@@ -123,25 +146,24 @@ function exportToExcel() {
 function renderTable(data) {
     const container = document.getElementById('tableBody');
     container.innerHTML = ""; 
-
     document.getElementById('totalSales').textContent = allSales.length;
     document.getElementById('filteredCount').textContent = data.length;
 
     data.forEach(row => {
         const tr = document.createElement('tr');
         const ratioValue = row.RATIO ? (row.RATIO * 100).toFixed(2) : null;
-        const ratioClass = (ratioValue < 80 || ratioValue > 110) ? "red" : "green";
 
+        // Colors removed here
         tr.innerHTML = `
             <td>${row.JURISDICTION || ''}</td>
             <td>${row.NBHD_REGION || row.REGION || 'N/A'}</td>
             <td>${row.PARCEL_NUMBER || row.PARCEL_ID || 'N/A'}</td>
             <td>${row.SALE_DATE || 'N/A'}</td>
-            <td class="green">$${parseFloat(row.ADUSTED_SALES_PRICE || 0).toLocaleString()}</td>
+            <td>$${parseFloat(row.ADUSTED_SALES_PRICE || 0).toLocaleString()}</td>
             <td>$${parseFloat(row.LAND_VALUE || 0).toLocaleString()}</td>
             <td>$${parseFloat(row.IMP_VALUE || 0).toLocaleString()}</td>
             <td>$${parseFloat(row.TOTAL_VALUE || 0).toLocaleString()}</td>
-            <td class="${ratioClass}">${ratioValue ? ratioValue + '%' : 'N/A'}</td>
+            <td>${ratioValue ? ratioValue + '%' : 'N/A'}</td>
         `;
         container.appendChild(tr);
     });
@@ -152,11 +174,7 @@ function renderTable(data) {
  */
 document.getElementById('logoutBtn').addEventListener('click', async () => {
     if (confirm("Logout and close the console?")) {
-        try {
-            await fetch('/shutdown', { method: 'POST' });
-        } catch (e) {
-            console.log("Shutting down...");
-        }
+        try { await fetch('/shutdown', { method: 'POST' }); } catch (e) {}
         window.close();
     }
 });

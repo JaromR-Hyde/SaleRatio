@@ -1,40 +1,39 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <link rel="icon" href="favicon.ico" type="image/x-icon">
-    <meta charset="UTF-8" />
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
     <title>Sale Ratio Dashboard</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
-  </head>
-  <body>
+</head>
+<body>
     <div class="top-nav">
         <span id="userContext">Loading Session...</span>
         <button id="logoutBtn" class="logout-btn">Logout & Exit</button>
     </div>
 
     <div class="summary-container">
-        <h1>Column Selection & Filters</h1>
+        <h1>Sale Ratio Summary Report</h1>
         
-        <div id="filter-builder" style="background: #f0f0f0; padding: 20px; border-radius: 8px; border: 1px solid #ccc; margin-bottom: 20px;">
+        <div id="filter-builder">
             <div id="filter-rows-container">
                 </div>
             
             <div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
-                <button id="addFilterBtn" class="form-input" style="width: auto; cursor: pointer;">+ Add Filter</button>
-                <button id="applyFiltersBtn" class="logout-btn" style="background-color: #007BFF; width: auto;">Apply Filters</button>
-                <button id="exportExcelBtn" class="form-input" style="width: auto; background-color: #0a7d00; color: white; cursor: pointer;">Export to Excel</button>
-                <button id="clearFiltersBtn" class="form-input" style="width: auto; cursor: pointer;">Reset All</button>
+                <button id="addFilterBtn" class="form-input" style="cursor: pointer;">+ Add Filter</button>
+                <button id="applyFiltersBtn" class="logout-btn" style="background-color: #007BFF;">Apply Filters</button>
+                <button id="exportExcelBtn" class="form-input" style="background-color: #0a7d00; color: white; cursor: pointer;">Export to Excel</button>
+                <button id="clearFiltersBtn" class="form-input" style="cursor: pointer;">Reset All</button>
             </div>
         </div>
 
         <div class="summary-grid">
-            <div>Total Sales: <span id="totalSales" class="green">0</span></div>
-            <div>Filtered Results: <span id="filteredCount" class="yellow">0</span></div>
+            <div>Total Sales: <span id="totalSales">0</span></div>
+            <div>Filtered Results: <span id="filteredCount">0</span></div>
             <div>Report Year: <span>2026</span></div>
         </div>
 
-        <div style="overflow-x: auto; margin-top: 20px;">
+        <div class="table-wrapper">
             <table>
                 <thead>
                     <tr>
@@ -55,10 +54,5 @@
     </div>
 
     <script src="dashboard.js"></script>
-  </body>
+</body>
 </html>
-
-
-
-
-  
