@@ -2,14 +2,10 @@
 let allSales = []; 
 let currentFilteredData = []; 
 
-/**
- * INIT DASHBOARD
- */
 async function initDashboard() {
     try {
         const sessionReq = await fetch('session.json');
         const session = await sessionReq.json();
-        
         const dataReq = await fetch('output.json');
         allSales = await dataReq.json();
         currentFilteredData = [...allSales];
@@ -29,131 +25,84 @@ async function initDashboard() {
             currentFilteredData = [...allSales];
             renderTable(allSales);
         });
-
-    } catch (err) {
-        console.error("Dashboard error:", err);
-    }
+    } catch (err) { console.error(err); }
 }
 
-/**
- * ADD FILTER ROW
- */
 function addFilterRow() {
     const container = document.getElementById('filter-rows-container');
     if (allSales.length === 0) return;
-
     const keys = Object.keys(allSales[0]);
     const rowDiv = document.createElement('div');
     rowDiv.className = "filter-row";
     rowDiv.style = "display: flex; gap: 10px; margin-bottom: 10px; align-items: center; background: #fff; padding: 10px; border-radius: 4px; border: 1px solid #ddd;";
-
     const fieldSelect = document.createElement('select');
     fieldSelect.className = "form-input filter-field";
-    fieldSelect.style.width = "200px";
     fieldSelect.innerHTML = keys.map(k => `<option value="${k}">${k.replace(/_/g, ' ')}</option>`).join('');
-
     const opSelect = document.createElement('select');
     opSelect.className = "form-input filter-operator";
-    opSelect.style.width = "120px";
-    opSelect.innerHTML = `
-        <option value="equals">equals</option>
-        <option value="contains">contains</option>
-        <option value="greater"> &gt; </option>
-        <option value="less"> &lt; </option>
-    `;
-
+    opSelect.innerHTML = `<option value="equals">equals</option><option value="contains">contains</option><option value="greater"> > </option><option value="less"> < </option>`;
     const valSelect = document.createElement('select');
     valSelect.className = "form-input filter-value";
     valSelect.style.flexGrow = "1";
-
     const delBtn = document.createElement('button');
     delBtn.innerHTML = "✕";
     delBtn.style = "background: none; border: none; color: #b30000; cursor: pointer; font-weight: bold;";
     delBtn.onclick = () => rowDiv.remove();
-
     rowDiv.appendChild(fieldSelect);
     rowDiv.appendChild(opSelect);
     rowDiv.appendChild(valSelect);
     rowDiv.appendChild(delBtn);
     container.appendChild(rowDiv);
-
     updateValueOptions(fieldSelect, valSelect);
     fieldSelect.addEventListener('change', () => updateValueOptions(fieldSelect, valSelect));
 }
 
-/**
- * UPDATE VALUE OPTIONS
- */
 function updateValueOptions(fieldElem, valueElem) {
     const selectedField = fieldElem.value;
-    const uniqueValues = [...new Set(allSales.map(item => item[selectedField]))]
-        .filter(val => val !== null && val !== undefined && val !== "")
-        .sort();
-
-    valueElem.innerHTML = `<option value="">-- Select Value --</option>` + 
-        uniqueValues.map(v => `<option value="${v}">${v}</option>`).join('');
+    const uniqueValues = [...new Set(allSales.map(item => item[selectedField]))].filter(v => v).sort();
+    valueElem.innerHTML = `<option value="">-- Select Value --</option>` + uniqueValues.map(v => `<option value="${v}">${v}</option>`).join('');
 }
 
-/**
- * APPLY FILTERS
- */
 function applyAllFilters() {
     const filterRows = document.querySelectorAll('.filter-row');
     let filteredData = [...allSales];
-
     filterRows.forEach(row => {
         const field = row.querySelector('.filter-field').value;
         const operator = row.querySelector('.filter-operator').value;
         const value = row.querySelector('.filter-value').value.toLowerCase().trim();
-
         if (value === "") return;
-
         filteredData = filteredData.filter(item => {
-            const rawValue = item[field];
-            const itemString = (rawValue || "").toString().toLowerCase();
-            const itemNum = parseFloat(rawValue);
+            const itemStr = (item[field] || "").toString().toLowerCase();
+            const itemNum = parseFloat(item[field]);
             const inputNum = parseFloat(value);
-
             switch (operator) {
-                case "equals": return itemString === value;
-                case "contains": return itemString.includes(value);
-                case "greater": return !isNaN(itemNum) && itemNum > inputNum;
-                case "less": return !isNaN(itemNum) && itemNum < inputNum;
+                case "equals": return itemStr === value;
+                case "contains": return itemStr.includes(value);
+                case "greater": return itemNum > inputNum;
+                case "less": return itemNum < inputNum;
                 default: return true;
             }
         });
     });
-
     currentFilteredData = filteredData;
     renderTable(filteredData);
 }
 
-/**
- * EXPORT TO EXCEL
- */
 function exportToExcel() {
-    if (currentFilteredData.length === 0) return;
-    const worksheet = XLSX.utils.json_to_sheet(currentFilteredData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Sales_Data");
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-    XLSX.writeFile(workbook, `Sale_Ratio_Export_${timestamp}.xlsx`);
+    const ws = XLSX.utils.json_to_sheet(currentFilteredData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Sales");
+    XLSX.writeFile(wb, `Export_${new Date().getTime()}.xlsx`);
 }
 
-/**
- * RENDER TABLE
- */
 function renderTable(data) {
     const container = document.getElementById('tableBody');
     container.innerHTML = ""; 
     document.getElementById('totalSales').textContent = allSales.length;
     document.getElementById('filteredCount').textContent = data.length;
-
     data.forEach(row => {
         const tr = document.createElement('tr');
-        const ratioValue = row.RATIO ? (row.RATIO * 100).toFixed(2) : null;
-
-        // Colors removed here
+        const ratio = row.RATIO ? (row.RATIO * 100).toFixed(2) + '%' : 'N/A';
         tr.innerHTML = `
             <td>${row.JURISDICTION || ''}</td>
             <td>${row.NBHD_REGION || row.REGION || 'N/A'}</td>
@@ -163,17 +112,13 @@ function renderTable(data) {
             <td>$${parseFloat(row.LAND_VALUE || 0).toLocaleString()}</td>
             <td>$${parseFloat(row.IMP_VALUE || 0).toLocaleString()}</td>
             <td>$${parseFloat(row.TOTAL_VALUE || 0).toLocaleString()}</td>
-            <td>${ratioValue ? ratioValue + '%' : 'N/A'}</td>
-        `;
+            <td>${ratio}</td>`;
         container.appendChild(tr);
     });
 }
 
-/**
- * LOGOUT
- */
 document.getElementById('logoutBtn').addEventListener('click', async () => {
-    if (confirm("Logout and close the console?")) {
+    if (confirm("Close application?")) {
         try { await fetch('/shutdown', { method: 'POST' }); } catch (e) {}
         window.close();
     }
